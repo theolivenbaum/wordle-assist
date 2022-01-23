@@ -1,0 +1,319 @@
+﻿/* Global Styles & Colors */
+:root {
+    --green: #6aaa64;
+    --darkendGreen: #538d4e;
+    --yellow: #c9b458;
+    --darkendYellow: #b59f3b;
+    --lightGray: #d8d8d8;
+    --gray: #86888a;
+    --darkGray: #939598;
+    --white: #fff;
+    --black: #212121;
+    /* Colorblind colors */
+    --orange: #f5793a;
+    --blue: #85c0f9;
+    font-family: 'Clear Sans', 'Helvetica Neue', Arial, sans-serif;
+    font-size: 16px;
+    --header-height: 50px;
+    --keyboard-height: 200px;
+    --game-max-width: 500px;
+}
+
+/* Light theme colors */
+:root {
+    --color-tone-1: #1a1a1b;
+    --color-tone-2: #787c7e;
+    --color-tone-3: #878a8c;
+    --color-tone-4: #d3d6da;
+    --color-tone-5: #edeff1;
+    --color-tone-6: #f6f7f8;
+    --color-tone-7: #ffffff;
+    --opacity-50: rgba(255, 255, 255, 0.5);
+}
+
+/* Dark Theme Colors */
+.nightmode {
+    --color-tone-1: #d7dadc;
+    --color-tone-2: #818384;
+    --color-tone-3: #565758;
+    --color-tone-4: #3a3a3c;
+    --color-tone-5: #272729;
+    --color-tone-6: #1a1a1b;
+    --color-tone-7: #121213;
+    --opacity-50: rgba(0, 0, 0, 0.5);
+}
+
+/* Constant colors and colors derived from theme */
+:root,
+.nightmode {
+    --color-background: var(--color-tone-7);
+}
+
+:root {
+    --color-present: var(--yellow);
+    --color-correct: var(--green);
+    --color-absent: var(--color-tone-2);
+    --tile-text-color: var(--color-tone-7);
+    --key-text-color: var(--color-tone-1);
+    --key-evaluated-text-color: var(--color-tone-7);
+    --key-bg: var(--color-tone-4);
+    --key-bg-present: var(--color-present);
+    --key-bg-correct: var(--color-correct);
+    --key-bg-absent: var(--color-absent);
+    --modal-content-bg: var(--color-tone-7);
+}
+
+.nightmode {
+    --color-present: var(--darkendYellow);
+    --color-correct: var(--darkendGreen);
+    --color-absent: var(--color-tone-4);
+    --tile-text-color: var(--color-tone-1);
+    --key-text-color: var(--color-tone-1);
+    --key-evaluated-text-color: var(--color-tone-1);
+    --key-bg: var(--color-tone-2);
+    --key-bg-present: var(--color-present);
+    --key-bg-correct: var(--color-correct);
+    --key-bg-absent: var(--color-absent);
+    --modal-content-bg: var(--color-tone-7);
+}
+
+.colorblind {
+    --color-correct: var(--orange);
+    --color-present: var(--blue);
+    --tile-text-color: var(--white);
+    --key-bg-present: var(--color-present);
+    --key-bg-correct: var(--color-correct);
+    --key-bg-absent: var(--color-absent);
+}
+
+html {
+    height: 100%;
+}
+
+body {
+    height: 100%;
+    background-color: var(--color-background);
+    margin: 0;
+    padding: 0;
+    /* Prevent scrollbar appearing on page transition */
+    overflow-y: hidden;
+}
+
+
+
+:host {
+    display: inline-block;
+}
+
+.tile {
+    width: 100%;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 2rem;
+    line-height: 2rem;
+    font-weight: bold;
+    vertical-align: middle;
+    box-sizing: border-box;
+    color: var(--tile-text-color);
+    text-transform: uppercase;
+    user-select: none;
+}
+
+    .tile::before {
+        content: '';
+        display: inline-block;
+        padding-bottom: 100%;
+    }
+
+/* Allow tiles to be smaller on small screens */
+@media (max-height: 600px) {
+    .tile {
+        font-size: 1em;
+        line-height: 1em;
+    }
+}
+
+.tile.state-empty{
+    border: 2px solid var(--color-tone-4);
+}
+
+.tile.state-tbd{
+    background-color: var(--color-tone-7);
+    border: 2px solid var(--color-tone-3);
+    color: var(--color-tone-1);
+}
+
+.tile.state-correct{
+    background-color: var(--color-correct);
+}
+
+.tile.state-present{
+    background-color: var(--color-present);
+}
+
+.tile.state-absent{
+    background-color: var(--color-absent);
+}
+
+.tile.animation-pop{
+    animation-name: PopIn;
+    animation-duration: 100ms;
+}
+
+@keyframes PopIn {
+    from {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+
+    40% {
+        transform: scale(1.1);
+        opacity: 1;
+    }
+}
+
+.tile.animation-flip-in{
+    animation-name: FlipIn;
+    animation-duration: 250ms;
+    animation-timing-function: ease-in;
+}
+
+@keyframes FlipIn {
+    0% {
+        transform: rotateX(0);
+    }
+
+    100% {
+        transform: rotateX(-90deg);
+    }
+}
+
+.tile.animation-flip-out{
+    animation-name: FlipOut;
+    animation-duration: 250ms;
+    animation-timing-function: ease-in;
+}
+
+@keyframes FlipOut {
+    0% {
+        transform: rotateX(-90deg);
+    }
+
+    100% {
+        transform: rotateX(0);
+    }
+}
+
+.row {
+    grid-template-columns: repeat(5, 1fr) !important;
+    grid-gap: 5px !important;
+}
+
+.win {
+    animation-name: Bounce;
+    animation-duration: 1000ms;
+}
+
+@keyframes Bounce {
+    0%, 20% {
+        transform: translateY(0);
+    }
+
+    40% {
+        transform: translateY(-30px);
+    }
+
+    50% {
+        transform: translateY(5px);
+    }
+
+    60% {
+        transform: translateY(-15px);
+    }
+
+    80% {
+        transform: translateY(2px);
+    }
+
+    100% {
+        transform: translateY(0);
+    }
+}
+
+@keyframes Shake {
+    10%, 90% {
+        transform: translateX(-1px);
+    }
+
+    20%, 80% {
+        transform: translateX(2px);
+    }
+
+    30%, 50%, 70% {
+        transform: translateX(-4px);
+    }
+
+    40%, 60% {
+        transform: translateX(4px);
+    }
+}
+
+.invalid {
+    animation-name: Shake;
+    animation-duration: 600ms;
+}
+
+.tiny-row {
+    grid-template-columns: repeat(5, 1fr) !important;
+    grid-gap: 5px !important;
+}
+
+.tiny-tile {
+    width: 1.5em;
+    height: 1.5em;
+    font-size: 1em;
+    line-height: 1.5em;
+    vertical-align: middle;
+    font-weight: bold;
+    box-sizing: border-box;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    text-transform: uppercase;
+    user-select: none;
+    background-color: var(--color-tone-7);
+    border: 1px solid var(--color-tone-3);
+    color: var(--color-tone-1);
+    margin-right: 2px;
+}
+
+    .tiny-tile.state-correct {
+        background-color: var(--key-bg-correct);
+        border: 1px solid var(--color-tone-3);
+        color: var(--tile-text-color);
+    }
+
+.floating-logo {
+    border-radius: 6px;
+    padding: 8px 16px;
+    display:inline-flex;
+    margin-bottom:16px;
+}
+
+a.floating-logo :link {
+    text-decoration: none;
+}
+
+a.floating-logo:visited {
+    text-decoration: none;
+}
+
+a.floating-logo:hover {
+    text-decoration: none;
+    background-color: var(--color-tone-5);
+}
+
+a.floating-logo:active {
+    text-decoration: none;
+}

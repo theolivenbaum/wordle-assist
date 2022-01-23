@@ -1,0 +1,14 @@
+<Project Sdk="h5.Target/0.0.21664">
+    <PropertyGroup>
+        <TargetFramework>netstandard2.1</TargetFramework>
+        <LangVersion>7.2</LangVersion>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="h5" Version="0.0.23543" />
+        <PackageReference Include="h5.core" Version="0.0.22512" />
+        <PackageReference Include="h5.httpclient" Version="0.0.24445" />
+        <PackageReference Include="h5.Newtonsoft.Json" Version="0.0.23385" />
+        <PackageReference Include="Tesserae" Version="2021.12.24307" />
+    </ItemGroup>
+</Project>

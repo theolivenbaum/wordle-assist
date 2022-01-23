@@ -1,0 +1,31 @@
+{
+  "sourceMap": { "enabled": false },
+  "loader": {
+    "type": "Global"
+  },
+
+  "resources": [
+    {
+      "name": "images",
+      "files": [ "h5/assets/img/*" ],
+      "output": "assets/img/"
+    },
+    {
+      "name": "styles",
+      "files": [ "h5/assets/css/*" ],
+      "output": "assets/css/"
+    }
+  ],
+  "cleanOutputFolderBeforeBuildPattern": "*.*",
+  "rules": {
+    "anonymousType": "Plain",
+    "arrayIndex": "Managed",
+    "autoProperty": "Plain",
+    "boxing": "Managed",
+    "externalCast": "Plain",
+    "inlineComment": "Plain",
+    "integer": "Managed",
+    "lambda": "Plain",
+    "useShortForms": true
+  }
+}
