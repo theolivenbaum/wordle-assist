@@ -18,6 +18,8 @@ namespace WordleSolver
 
         public static async Task PreloadInitialScores(ProgressIndicator pi)
         {
+            //This method uses a couple of Script.Write to avoid some overhead from h5
+            
             Frequencies = Answers.SelectMany(a => a).GroupBy(a => a).ToDictionary(a => a.Key, a => (float)a.Count() / Answers.Length);
 
             var list = new List<WordStat>();
@@ -39,7 +41,7 @@ namespace WordleSolver
                 }
                 int greens = 0, yellows = 0, grays = 0, vowels = 0; 
                 
-                var set = Script.Write<object>("new Set()");
+                var set = Script.Write<object>("new Set()"); //Uses the native javascript set for speed
 
                 var w1 = word[0]; var w2 = word[1]; var w3 = word[2]; var w4 = word[3]; var w5 = word[4];
 
@@ -49,7 +51,7 @@ namespace WordleSolver
                 Script.Write("set.add(w4)");
                 Script.Write("set.add(w5)");
 
-                if (Script.Write<bool>("set.has(A)")) Script.Write("vowels++");
+                if (Script.Write<bool>("set.has(A)")) Script.Write("vowels++");  //h5 for some reason emit vowels = vowels + 1 | 0;, which is a bit slower
                 if (Script.Write<bool>("set.has(E)")) Script.Write("vowels++");
                 if (Script.Write<bool>("set.has(I)")) Script.Write("vowels++");
                 if (Script.Write<bool>("set.has(O)")) Script.Write("vowels++");
@@ -60,8 +62,8 @@ namespace WordleSolver
 
                 for (int i = 0; i < answersCount; Script.Write("i++"))
                 {
-                    //string answer = answers[i];
-                    string answer = Script.Write<string>("answers[i]");
+                    string answer = Script.Write<string>("answers[i]");  //avoid h5 boundary check for answers[i]
+                    
                     int g = 0, y = 0;
 
                     var a1 = answer[0]; var a2 = answer[1]; var a3 = answer[2]; var a4 = answer[3]; var a5 = answer[4];
@@ -78,21 +80,21 @@ namespace WordleSolver
                     if (Script.Write<bool>("set.has(a4)")) Script.Write("y++");
                     if (Script.Write<bool>("set.has(a5)")) Script.Write("y++");
 
-                    y = y - g;
-
-                    grays += 5 - (y - g);
+                    y -= g;
+                    
+                    grays   += 5 - (y - g);
                     yellows += y;
-                    greens += g;
+                    greens  += g;
                 }
 
                 list.Add(new WordStat()
                 {
-                    Word = word,
+                    Word    = word,
                     Yellows = yellows,
-                    Greens = greens,
-                    Grays = grays,
-                    Vowels = vowels,
-                    Common = common
+                    Greens  = greens,
+                    Grays   = grays,
+                    Vowels  = vowels,
+                    Common  = common
                 });
             }
 
@@ -101,6 +103,8 @@ namespace WordleSolver
 
         public static async Task<WordStat[]> GetNextScores(HashSet<string> remainingCandidates, ProgressIndicator pi, CancellationToken token)
         {
+            //This method uses a couple of Script.Write to avoid some overhead from h5
+
             var list = new List<WordStat>();
             var freq = Answers.SelectMany(a => a).GroupBy(a => a).ToDictionary(a => a.Key, a => (float)a.Count() / Answers.Length);
 
@@ -120,7 +124,7 @@ namespace WordleSolver
 
                 int greens = 0, yellows = 0, grays = 0, vowels = 0;
 
-                var set = Script.Write<object>("new Set()");
+                var set = Script.Write<object>("new Set()"); //Uses the native javascript set for speed
 
                 var w1 = word[0]; var w2 = word[1]; var w3 = word[2]; var w4 = word[3]; var w5 = word[4];
 
@@ -130,19 +134,18 @@ namespace WordleSolver
                 Script.Write("set.add(w4)");
                 Script.Write("set.add(w5)");
 
-                if (Script.Write<bool>("set.has('a')")) vowels++;
-                if (Script.Write<bool>("set.has('e')")) vowels++;
-                if (Script.Write<bool>("set.has('i')")) vowels++;
-                if (Script.Write<bool>("set.has('o')")) vowels++;
-                if (Script.Write<bool>("set.has('u')")) vowels++;
-                if (Script.Write<bool>("set.has('y')")) vowels++;
+                if (Script.Write<bool>("set.has('a')")) Script.Write("vowels++"); //h5 for some reason emit vowels = vowels + 1 | 0;, which is a bit slower
+                if (Script.Write<bool>("set.has('e')")) Script.Write("vowels++");
+                if (Script.Write<bool>("set.has('i')")) Script.Write("vowels++");
+                if (Script.Write<bool>("set.has('o')")) Script.Write("vowels++");
+                if (Script.Write<bool>("set.has('u')")) Script.Write("vowels++");
+                if (Script.Write<bool>("set.has('y')")) Script.Write("vowels++");
 
                 float common = freq[w1] + freq[w2] + freq[w3] + freq[w4] + freq[w5];
 
                 for (int i = 0; i < answersCount; Script.Write("i++"))
                 {
-                    //string answer = answers[i];
-                    string answer = Script.Write<string>("answers[i]");
+                    string answer = Script.Write<string>("answers[i]"); //avoid h5 boundary check for answers[i]
                     int g = 0, y = 0;
 
                     var a1 = answer[0]; var a2 = answer[1]; var a3 = answer[2]; var a4 = answer[3]; var a5 = answer[4];
@@ -159,7 +162,7 @@ namespace WordleSolver
                     if (Script.Write<bool>("set.has(a4)")) Script.Write("y++");
                     if (Script.Write<bool>("set.has(a5)")) Script.Write("y++");
 
-                    y = y - g;
+                    y -= g;
 
                     grays += 5 - (y - g);
                     yellows += y;
@@ -168,18 +171,17 @@ namespace WordleSolver
 
                 list.Add(new WordStat()
                 {
-                    Word = word,
+                    Word    = word,
                     Yellows = yellows,
-                    Greens = greens,
-                    Grays = grays,
-                    Vowels = vowels,
-                    Common = common
+                    Greens  = greens,
+                    Grays   = grays,
+                    Vowels  = vowels,
+                    Common  = common
                 });
             }
 
             return list.ToArray();
         }
-
     }
 
     [ObjectLiteral]

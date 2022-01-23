@@ -20,7 +20,13 @@ namespace WordleSolver
         public static void Show(IComponent component, string title)
         {
             ClearChildren(document.body);
-            document.body.appendChild(VStack().Background(Theme.Secondary.Background).AlignItemsCenter().S().Children(component.WS().H(10).Grow(), UI.GetLogo()).Render());
+
+            var titleC = TextBlock("<a href='https://www.powerlanguage.co.uk/wordle/' target='_blank'>Wordle</a> Assist", treatAsHTML:true).Medium().SemiBold().PR(32);
+
+            document.body.appendChild(VStack().Background(Theme.Secondary.Background)
+                                              .AlignItemsCenter().S().Children(
+                                                    component.WS().H(10).Grow(), 
+                                                    HStack().MB(16).AlignItemsCenter().Children(titleC, UI.GetLogo())).Render());
             document.title = title;
         }
     }

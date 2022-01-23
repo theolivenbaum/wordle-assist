@@ -298,26 +298,18 @@ body {
     border-radius: 6px;
     padding: 8px 16px;
     display:inline-flex;
-    margin-bottom:16px;
 }
 
-a.floating-logo :link {
-    text-decoration: none;
-}
-
+a.floating-logo:link, 
 a.floating-logo:visited {
     text-decoration: none;
 }
 
+a.floating-logo:active,
 a.floating-logo:hover {
     text-decoration: none;
     background-color: var(--color-tone-5);
 }
-
-a.floating-logo:active {
-    text-decoration: none;
-}
-
 
 .keyboard-key {
     font-family: inherit;

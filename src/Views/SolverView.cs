@@ -11,13 +11,17 @@ namespace WordleSolver
 {
     public class SolverView : IComponent
     {
+        private const string ABSENT = "state-absent";
+        private const string PRESENT = "state-present";
+        private const string CORRECT = "state-correct";
+        private const string EMPTY = "state-empty";
+        private const string TBD = "state-tbd";
+        private const string KEY_ENTER = "Enter";
+        private const string KEY_BACKSPACE = "Backspace";
+
         private readonly IComponent _explainer;
-        private readonly TextBlock _title;
         private readonly TextBlock[][] _board;
         private readonly Stack _suggestions;
-        private readonly Stack _boardContainer;
-        private readonly Stack _keyboard;
-        private readonly Stack _gameArea;
         private readonly Grid[] _rows;
         private readonly IComponent _container;
         private int _currentRow;
@@ -31,56 +35,48 @@ namespace WordleSolver
 
         public SolverView()
         {
-            _explainer = Stack().WS().Children(TextBlock("Type your guess, press enter to accept, and click on the letters to toggle their color").TextCenter().Secondary().PT(32));
+            _explainer = Stack().WS().Children(TextBlock("Type your guess, press enter to accept, and click on the letters to toggle their color").TextCenter().Secondary());
             
-            _title = TextBlock("Wordle Assist").Medium().SemiBold().PB(32).PL(6);
-
             _board = new TextBlock[6][];
+            
             _currentRow = 0;
             _currentLetter = 0;
 
             for (int row = 0; row < 6; row++)
             {
                 var letters = new TextBlock[5];
-                letters[0] = TextBlock().Class("tile").Class("state-empty");
-                letters[1] = TextBlock().Class("tile").Class("state-empty");
-                letters[2] = TextBlock().Class("tile").Class("state-empty");
-                letters[3] = TextBlock().Class("tile").Class("state-empty");
-                letters[4] = TextBlock().Class("tile").Class("state-empty");
+            
+                letters[0] = TextBlock().Class("tile").Class(EMPTY);
+                letters[1] = TextBlock().Class("tile").Class(EMPTY);
+                letters[2] = TextBlock().Class("tile").Class(EMPTY);
+                letters[3] = TextBlock().Class("tile").Class(EMPTY);
+                letters[4] = TextBlock().Class("tile").Class(EMPTY);
+                
                 _board[row] = letters;
             }
 
-            _suggestions = VStack().H(420).MinWidth(128.px()).MaxWidth(420.px()).PL(32).PB(6);
+            _suggestions = VStack().MinWidth(128.px()).MaxWidth(420.px()).PL(32).PB(6).HS();
 
-            _rows = _board.Select((b, i) => Grid().Class("row").W(600).WS().Children(b).MT(i == 0 ? 0 : -3)).ToArray();
+            _rows = _board.Select((b, i) => Grid().Class("row").W(500).WS().Children(b).MT(i == 0 ? 0 : -3)).ToArray();
 
-            _boardContainer = Stack().Children(_rows);
+            var boardContainer = Stack().Children(_rows);
 
-            _keyboard = BuildKeyboard();
+            var gameArea = Stack().AlignItemsCenter().S()
+                                  .Children(boardContainer,
+                                            HStack().W(420).HS().Children(Empty().Grow(), _suggestions.HS(), Empty().Grow()));
 
-            _gameArea = Stack().Children(
-                        _boardContainer,
-                        HStack().W(420).Children(
-                            Empty().Grow(),
-                            _suggestions.NoShrink(),
-                            Empty().Grow()));
-
-            if(window.outerWidth > 500)
+            if (window.outerWidth > 500)
             {
-                _gameArea.Horizontal();
-                _boardContainer.H(420).W(350);
+                gameArea.Horizontal();
+                boardContainer.W(250);
             }
             else
             {
-                _title.TextCenter();
-                _boardContainer.H(500).W(420);
+                boardContainer.H(500).W(420);
+                _suggestions.H(420);
             }
 
-            _container = UI.CenteredWithBackground(
-                VStack().AlignItemsCenter().Children(
-                    _title.WS(),
-                    _gameArea,
-                    _explainer, _keyboard.PT(16).PB(16)));
+            _container = UI.CenteredWithBackground(VStack().AlignItemsCenter().Children(gameArea, _explainer.PT(32).PB(32), BuildKeyboard()));
 
             HookOnClick();
             HookKeyboardHandle();
@@ -89,13 +85,15 @@ namespace WordleSolver
 
         private Stack BuildKeyboard()
         {
-            return VStack().WS().AlignItemsCenter().Children(_keys.Select( line => HStack().NoWrap().WS().AlignItemsCenter().JustifyContent(ItemJustify.Center).Children(line.Select(l => GetKey(l)))));
+            return VStack().WS().AlignItemsCenter()
+                           .Children(_keys.Select(line => HStack().NoWrap().WS().AlignItemsCenter().JustifyContent(ItemJustify.Center)
+                                                                  .Children(line.Select(l => GetKey(l)))));
             
             IComponent GetKey(char l)
             {
                 var key = l.ToString();
-                if (l == '<') key = "Backspace"; 
-                else if (l == '>') key = "Enter";
+                if (l == '<') key = KEY_BACKSPACE; 
+                else if (l == '>') key = KEY_ENTER;
                 var btn = Button(key).Class("keyboard-key").OnClick(() => HandleKey(key));
                 if (l == '<') btn.W(96);
                 if (l == '>') btn.W(64);
@@ -118,26 +116,26 @@ namespace WordleSolver
             {
                 if (!string.IsNullOrEmpty(tile.textContent))
                 {
-                    if (tile.classList.contains("state-tbd"))
+                    if (tile.classList.contains(TBD))
                     {
                         Tippy.ShowFor(component, TextBlock("Type your word and press enter first"), out var onHide, TooltipAnimation.ShiftAway, TooltipPlacement.Bottom);
                         window.setTimeout((_) => onHide(), 500);
                         return;
                     }
-                    else if (tile.classList.contains("state-absent"))
+                    else if (tile.classList.contains(ABSENT))
                     {
-                        tile.classList.remove("state-absent");
-                        tile.classList.add("state-present");
+                        tile.classList.remove(ABSENT);
+                        tile.classList.add(PRESENT);
                     }
-                    else if (tile.classList.contains("state-present"))
+                    else if (tile.classList.contains(PRESENT))
                     {
-                        tile.classList.remove("state-present");
-                        tile.classList.add("state-correct");
+                        tile.classList.remove(PRESENT);
+                        tile.classList.add(CORRECT);
                     }
-                    else if (tile.classList.contains("state-correct"))
+                    else if (tile.classList.contains(CORRECT))
                     {
-                        tile.classList.remove("state-correct");
-                        tile.classList.add("state-absent");
+                        tile.classList.remove(CORRECT);
+                        tile.classList.add(ABSENT);
                     }
 
                     RefreshCandidates().FireAndForget();
@@ -162,6 +160,7 @@ namespace WordleSolver
             var board = ReadBoard();
 
             var greenLetters = new HashSet<char>();
+            var checkedLetters = new HashSet<char>();
             var greenLettersArray = new char[5];
 
             if (board.States[0].Any(s => s != State.TBD))
@@ -182,9 +181,29 @@ namespace WordleSolver
 
                         switch (states[col])
                         {
-                            case State.Correct: greenLettersArray[col] = letter; greenLetters.Add(letter); remainingCandidates.RemoveWhere(c => c[col] != letter); break;
-                            case State.Present: remainingCandidates.RemoveWhere(c => !c.Contains(letter)); break;
-                            case State.Absent: if (!greenLetters.Contains(letter)) { remainingCandidates.RemoveWhere(c => c.Contains(letter)); } break;
+                            case State.Correct:
+                            {
+                                greenLettersArray[col] = letter; 
+                                greenLetters.Add(letter);
+                                remainingCandidates.RemoveWhere(c => c[col] != letter);
+                                break;
+                            }
+                            case State.Present:
+                            {
+                                if (checkedLetters.Add(letter))
+                                {
+                                    remainingCandidates.RemoveWhere(c => !c.Contains(letter)); 
+                                }
+                                break;
+                            }
+                            case State.Absent:
+                            {
+                                if (!greenLetters.Contains(letter)) 
+                                { 
+                                    remainingCandidates.RemoveWhere(c => c.Contains(letter));
+                                }
+                                break;
+                            }
                         }
                     }
                 }
@@ -213,23 +232,23 @@ namespace WordleSolver
             var mostCommon  = scores.OrderByDescending(s => s.Common).Take(6).ToArray();
 
             _suggestions.Children(
-                Empty().H(10).Grow(),
+                Empty().Grow(),
                 VStack().WS().Children(
                     TextBlock("Most Greens").SemiBold().Secondary(),
                     HStack().Wrap().WS().Children(mostGreens.Select(w => RenderWord(w.Word).PR(12)))),
-                Empty().H(10).Grow(),
+                Empty().Grow(),
                 VStack().WS().Children(
                     TextBlock("Most Yellows").SemiBold().Secondary(),
                     HStack().Wrap().WS().Children(mostYellows.Select(w => RenderWord(w.Word).PR(12)))),
-                Empty().H(10).Grow(),
+                Empty().Grow(),
                 VStack().WS().Children(
                     TextBlock("Most Vowels").SemiBold().Secondary(),
                     HStack().Wrap().WS().Children(mostVowels.Select(w => RenderWord(w.Word).PR(12)))),
-                Empty().H(10).Grow(),
+                Empty().Grow(),
                 VStack().WS().Children(
                     TextBlock("Most Common").SemiBold().Secondary(),
                     HStack().Wrap().WS().Children(mostCommon.Select(w => RenderWord(w.Word).PR(12)))),
-                Empty().H(10).Grow()
+                Empty().Grow()
             );
 
             IComponent RenderWord(string word)
@@ -255,15 +274,15 @@ namespace WordleSolver
 
             State GetState(HTMLElement tile)
             {
-                if (tile.classList.contains("state-absent"))
+                if (tile.classList.contains(ABSENT))
                 {
                     return State.Absent;
                 }
-                else if (tile.classList.contains("state-present"))
+                else if (tile.classList.contains(PRESENT))
                 {
                     return State.Present;
                 }
-                else if (tile.classList.contains("state-correct"))
+                else if (tile.classList.contains(CORRECT))
                 {
                     return State.Correct;
                 }
@@ -290,14 +309,14 @@ namespace WordleSolver
                     if (string.IsNullOrWhiteSpace(_board[_currentRow][_currentLetter].Text))
                     {
                         _board[_currentRow][_currentLetter].Text = keyPressed.ToLower();
-                        _board[_currentRow][_currentLetter].RemoveClass("state-empty").Class("state-tbd");
+                        _board[_currentRow][_currentLetter].RemoveClass(EMPTY).Class(TBD);
                         if (_currentLetter < 4) _currentLetter++;
                     }
                 }
             }
             else
             {
-                if (keyPressed == "Enter")
+                if (keyPressed == KEY_ENTER)
                 {
                     if (_currentLetter == 4 && _currentRow < 5)
                     {
@@ -310,7 +329,7 @@ namespace WordleSolver
                             {
                                 var tileComponent = _board[_currentRow][col];
                                 var tile = tileComponent.Render();
-                                if (tile.classList.contains("state-absent") || tile.classList.contains("state-present") || tile.classList.contains("state-correct")) continue;
+                                if (tile.classList.contains(ABSENT) || tile.classList.contains(PRESENT) || tile.classList.contains(CORRECT)) continue;
 
                                 var finalState = State.Absent;
                                 if (_currentRow > 0)
@@ -325,8 +344,8 @@ namespace WordleSolver
                                     }
                                 }
 
-                                tile.classList.add(finalState == State.Absent ? "state-absent" : "state-correct");
-                                tile.classList.remove("state-tbd");
+                                tile.classList.add(finalState == State.Absent ? ABSENT : CORRECT);
+                                tile.classList.remove(TBD);
                             }
                             _currentRow++;
                             _currentLetter = 0;
@@ -339,7 +358,7 @@ namespace WordleSolver
                         }
                     }
                 }
-                else if (keyPressed == "Backspace")
+                else if (keyPressed == KEY_BACKSPACE)
                 {
                     if (_currentLetter == 0)
                     {
@@ -349,45 +368,55 @@ namespace WordleSolver
                             {
                                 _currentRow--;
                                 _currentLetter = 4;
-                                _board[_currentRow][_currentLetter].Text = "";
-                                _board[_currentRow][_currentLetter].RemoveClass("state-absent").RemoveClass("state-tbd").RemoveClass("state-present").RemoveClass("state-correct").Class("state-empty");
+                                
+                                var row = _board[_currentRow];
+
+                                row[_currentLetter].Text = "";
+                                row[_currentLetter].RemoveClass(ABSENT).RemoveClass(TBD).RemoveClass(PRESENT).RemoveClass(CORRECT).Class(EMPTY);
+
                                 for (int col = 0; col < _currentLetter; col++)
                                 {
-                                    _board[_currentRow][col].RemoveClass("state-absent").RemoveClass("state-empty").RemoveClass("state-present").RemoveClass("state-correct").Class("state-tbd");
+                                    row[col].RemoveClass(ABSENT).RemoveClass(EMPTY).RemoveClass(PRESENT).RemoveClass(CORRECT).Class(TBD);
                                 }
+
                                 RefreshCandidates().FireAndForget();
                             }
                             else
                             {
-                                _board[_currentRow][_currentLetter].Text = "";
-                                _board[_currentRow][_currentLetter].RemoveClass("state-absent").RemoveClass("state-tbd").RemoveClass("state-present").RemoveClass("state-correct").Class("state-empty");
+                                var row = _board[_currentRow];
+
+                                row[_currentLetter].Text = "";
+                                row[_currentLetter].RemoveClass(ABSENT).RemoveClass(TBD).RemoveClass(PRESENT).RemoveClass(CORRECT).Class(EMPTY);
                                 for (int col = 0; col < _currentLetter - 1; col++)
                                 {
-                                    _board[_currentRow][col].RemoveClass("state-absent").RemoveClass("state-empty").RemoveClass("state-present").RemoveClass("state-correct").Class("state-tbd");
+                                    row[col].RemoveClass(ABSENT).RemoveClass(EMPTY).RemoveClass(PRESENT).RemoveClass(CORRECT).Class(TBD);
                                 }
                             }
                         }
                         else
                         {
                             _board[0][0].Text = "";
-                            _board[0][0].RemoveClass("state-absent").RemoveClass("state-tbd").RemoveClass("state-present").RemoveClass("state-correct").Class("state-empty");
+                            _board[0][0].RemoveClass(ABSENT).RemoveClass(TBD).RemoveClass(PRESENT).RemoveClass(CORRECT).Class(EMPTY);
                             for (int col = 0; col < _currentLetter; col++)
                             {
-                                _board[_currentRow][col].RemoveClass("state-absent").RemoveClass("state-tbd").RemoveClass("state-present").RemoveClass("state-correct").Class("state-tbd");
+                                _board[_currentRow][col].RemoveClass(ABSENT).RemoveClass(TBD).RemoveClass(PRESENT).RemoveClass(CORRECT).Class(TBD);
                             }
                         }
                     }
                     else
                     {
-                        if (_currentLetter > 0 && string.IsNullOrEmpty(_board[_currentRow][_currentLetter].Text))
+                        var row = _board[_currentRow];
+                        if (_currentLetter > 0 && string.IsNullOrEmpty(row[_currentLetter].Text))
                         {
                             _currentLetter--;
                         }
-                        _board[_currentRow][_currentLetter].Text = "";
-                        _board[_currentRow][_currentLetter].RemoveClass("state-absent").RemoveClass("state-tbd").RemoveClass("state-present").RemoveClass("state-correct").Class("state-empty");
+                        
+                        row[_currentLetter].Text = "";
+                        row[_currentLetter].RemoveClass(ABSENT).RemoveClass(TBD).RemoveClass(PRESENT).RemoveClass(CORRECT).Class(EMPTY);
+
                         for (int col = 0; col < _currentLetter; col++)
                         {
-                            _board[_currentRow][col].RemoveClass("state-absent").RemoveClass("state-empty").RemoveClass("state-present").RemoveClass("state-correct").Class("state-tbd");
+                            row[col].RemoveClass(ABSENT).RemoveClass(EMPTY).RemoveClass(PRESENT).RemoveClass(CORRECT).Class(TBD);
                         }
                     }
                 }
