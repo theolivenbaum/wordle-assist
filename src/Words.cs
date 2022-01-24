@@ -15,30 +15,33 @@ namespace WordleSolver
         public static HashSet<string> ValidWords = new HashSet<string>(Answers.Concat(Possible)); 
         public static WordStat[] InitialScores;
         public static Dictionary<char, float> Frequencies;
-
+        public static readonly HashSet<char> ValidLetters = new HashSet<char>("abcdefghijklmnopqrstuvwxyz");
+        
         public static async Task PreloadInitialScores(ProgressIndicator pi)
         {
             //This method uses a couple of Script.Write to avoid some overhead from h5
-            
-            Frequencies = Answers.SelectMany(a => a).GroupBy(a => a).ToDictionary(a => a.Key, a => (float)a.Count() / Answers.Length);
+
+            var answers = Answers; //.Concat(Possible).ToArray();
+            var answersCount = answers.Length;
+
+            Frequencies = answers.SelectMany(a => a).GroupBy(a => a).ToDictionary(a => a.Key, a => (float)a.Count() / answersCount);
 
             var list = new List<WordStat>();
             
             int count = 0;
-            var answers = Answers;
-            var answersCount = answers.Length;
             
             char A = 'a', E = 'e', I = 'i', O = 'o', U = 'u', Y = 'y';
 
-            foreach (var word in Answers)
+            foreach (var word in answers)
             {
                 count++;
 
                 if (count % 100 == 0) 
                 { 
-                    pi.Progress(count, Answers.Length);
+                    pi.Progress(count, answersCount);
                     await Task.Delay(0); 
                 }
+
                 int greens = 0, yellows = 0, grays = 0, vowels = 0; 
                 
                 var set = Script.Write<object>("new Set()"); //Uses the native javascript set for speed
@@ -106,11 +109,27 @@ namespace WordleSolver
             //This method uses a couple of Script.Write to avoid some overhead from h5
 
             var list = new List<WordStat>();
-            var freq = Answers.SelectMany(a => a).GroupBy(a => a).ToDictionary(a => a.Key, a => (float)a.Count() / Answers.Length);
+            
+            var answers = remainingCandidates.ToArray();
+            var answersCount = answers.Length;
+
+            var freq = answers.SelectMany(a => a).GroupBy(a => a).ToDictionary(a => a.Key, a => (float)a.Count() / answers.Length);
+            
+            foreach(var c in ValidLetters)
+            {
+                if (!freq.ContainsKey(c)) freq[c] = 0f;
+            }
 
             int count = 0;
-            var answers = Answers;
-            var answersCount = answers.Length;
+
+            var remainingVowels = answers.SelectMany(w => w).Where(c => c == 'a' || c == 'e' || c == 'i' || c == 'o' || c == 'u' || c == 'y').Distinct().ToArray();
+
+            bool hasA = remainingVowels.Contains('a');
+            bool hasE = remainingVowels.Contains('e');
+            bool hasI = remainingVowels.Contains('i');
+            bool hasO = remainingVowels.Contains('o');
+            bool hasU = remainingVowels.Contains('u');
+            bool hasY = remainingVowels.Contains('y');
 
             foreach (var word in remainingCandidates)
             {
@@ -134,12 +153,12 @@ namespace WordleSolver
                 Script.Write("set.add(w4)");
                 Script.Write("set.add(w5)");
 
-                if (Script.Write<bool>("set.has('a')")) Script.Write("vowels++"); //h5 for some reason emit vowels = vowels + 1 | 0;, which is a bit slower
-                if (Script.Write<bool>("set.has('e')")) Script.Write("vowels++");
-                if (Script.Write<bool>("set.has('i')")) Script.Write("vowels++");
-                if (Script.Write<bool>("set.has('o')")) Script.Write("vowels++");
-                if (Script.Write<bool>("set.has('u')")) Script.Write("vowels++");
-                if (Script.Write<bool>("set.has('y')")) Script.Write("vowels++");
+                if (hasA && Script.Write<bool>("set.has('a')")) Script.Write("vowels++"); //h5 for some reason emit vowels = vowels + 1 | 0;, which is a bit slower
+                if (hasE && Script.Write<bool>("set.has('e')")) Script.Write("vowels++");
+                if (hasI && Script.Write<bool>("set.has('i')")) Script.Write("vowels++");
+                if (hasO && Script.Write<bool>("set.has('o')")) Script.Write("vowels++");
+                if (hasU && Script.Write<bool>("set.has('u')")) Script.Write("vowels++");
+                if (hasY && Script.Write<bool>("set.has('y')")) Script.Write("vowels++");
 
                 float common = freq[w1] + freq[w2] + freq[w3] + freq[w4] + freq[w5];
 

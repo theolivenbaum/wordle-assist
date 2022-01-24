@@ -26,7 +26,6 @@ namespace WordleSolver
         private readonly IComponent _container;
         private int _currentRow;
         private int _currentLetter;
-        private readonly HashSet<char> _validKeys = new HashSet<char>("abcdefghijklmnopqrstuvwxyz");
 
         private static readonly string[] _keys = new[] { "qwertyuiop", "asdfghjkl", ">yxcvbnm<" };
 
@@ -160,6 +159,7 @@ namespace WordleSolver
             var board = ReadBoard();
 
             var greenLetters = new HashSet<char>();
+            var yellowLetters = new HashSet<char>();
             var checkedLetters = new HashSet<char>();
             var greenLettersArray = new char[5];
 
@@ -170,6 +170,24 @@ namespace WordleSolver
                     var states = board.States[row];
                     var letters = board.Letters[row];
                     if (states.Any(s => s == State.TBD)) continue;
+
+
+                    for (int col = 0; col < 5; col++)
+                    {
+                        switch (states[col])
+                        {
+                            case State.Correct:
+                            {
+                                greenLetters.Add(letters[col]);
+                                break;
+                            }
+                            case State.Present:
+                            {
+                                 yellowLetters.Add(letters[col]);
+                                break;
+                            }
+                        }
+                    }
 
                     for (int col = 0; col < 5; col++)
                     {
@@ -184,7 +202,6 @@ namespace WordleSolver
                             case State.Correct:
                             {
                                 greenLettersArray[col] = letter; 
-                                greenLetters.Add(letter);
                                 remainingCandidates.RemoveWhere(c => c[col] != letter);
                                 break;
                             }
@@ -192,13 +209,15 @@ namespace WordleSolver
                             {
                                 if (checkedLetters.Add(letter))
                                 {
-                                    remainingCandidates.RemoveWhere(c => !c.Contains(letter)); 
+                                    remainingCandidates.RemoveWhere(c => !c.Contains(letter) || c[col] == letter); 
                                 }
                                 break;
                             }
                             case State.Absent:
                             {
-                                if (!greenLetters.Contains(letter)) 
+                                remainingCandidates.RemoveWhere(c => c[col] == letter);
+
+                                if (!greenLetters.Contains(letter) && !yellowLetters.Contains(letter)) 
                                 { 
                                     remainingCandidates.RemoveWhere(c => c.Contains(letter));
                                 }
@@ -226,31 +245,45 @@ namespace WordleSolver
 
         private void RenderSuggestions(WordStat[] scores, char[] greenChars)
         {
-            var mostGreens  = scores.OrderByDescending(s => s.Greens).Take(6).ToArray();
-            var mostYellows = scores.OrderByDescending(s => s.Yellows).Take(6).ToArray();
-            var mostVowels  = scores.OrderByDescending(s => s.Vowels).Take(6).ToArray();
-            var mostCommon  = scores.OrderByDescending(s => s.Common).Take(6).ToArray();
+            bool isFinal = scores.Length == 1;
 
-            _suggestions.Children(
-                Empty().Grow(),
-                VStack().WS().Children(
-                    TextBlock("Most Greens").SemiBold().Secondary(),
-                    HStack().Wrap().WS().Children(mostGreens.Select(w => RenderWord(w.Word).PR(12)))),
-                Empty().Grow(),
-                VStack().WS().Children(
-                    TextBlock("Most Yellows").SemiBold().Secondary(),
-                    HStack().Wrap().WS().Children(mostYellows.Select(w => RenderWord(w.Word).PR(12)))),
-                Empty().Grow(),
-                VStack().WS().Children(
-                    TextBlock("Most Vowels").SemiBold().Secondary(),
-                    HStack().Wrap().WS().Children(mostVowels.Select(w => RenderWord(w.Word).PR(12)))),
-                Empty().Grow(),
-                VStack().WS().Children(
-                    TextBlock("Most Common").SemiBold().Secondary(),
-                    HStack().Wrap().WS().Children(mostCommon.Select(w => RenderWord(w.Word).PR(12)))),
-                Empty().Grow()
-            );
-
+            if (isFinal)
+            {
+                _suggestions.Children(
+                    Empty().Grow(),
+                    VStack().WS().Children(
+                        TextBlock("That should be it!").SemiBold().Secondary().Tooltip("There's only one valid answer left!", placement: TooltipPlacement.Left),
+                        HStack().Wrap().WS().Children(scores.Select(w => RenderWord(w.Word).PR(12)))),
+                    Empty().Grow()
+                    );
+            }
+            else
+            {
+                var mostGreens = scores.Where(s => s.Greens > 0).OrderByDescending(s => s.Greens).Take(6).ToArray();
+                var mostYellows = scores.Where(s => s.Yellows > 0).OrderByDescending(s => s.Yellows).Take(6).ToArray();
+                var mostVowels = scores.Where(s => s.Vowels > 0).OrderByDescending(s => s.Vowels).Take(6).ToArray();
+                var mostCommon = scores.Where(s => s.Common > 0).OrderByDescending(s => s.Common).Take(6).ToArray();
+                
+                _suggestions.Children(
+                    If(mostGreens.Any(), Empty().Grow()),
+                    If(mostGreens.Any(), VStack().WS().Children(
+                        TextBlock("Most Greens").SemiBold().Secondary().Tooltip("Guesses that should give you the highest probability of green tiles", placement: TooltipPlacement.Left).PT(8),
+                        HStack().Wrap().WS().Children(mostGreens.Select(w => RenderWord(w.Word).PR(12))))),
+                    If(mostYellows.Any(), Empty().Grow()),
+                    If(mostYellows.Any(), VStack().WS().Children(
+                        TextBlock("Most Yellows").SemiBold().Secondary().Tooltip("Guesses that should give you the highest probability of yellow tiles", placement: TooltipPlacement.Left).PT(8),
+                        HStack().Wrap().WS().Children(mostYellows.Select(w => RenderWord(w.Word).PR(12))))),
+                    If(mostVowels.Any(), Empty().Grow()),
+                    If(mostVowels.Any(), VStack().WS().Children(
+                        TextBlock("Most Vowels").SemiBold().Secondary().Tooltip("Guesses that will reveal more remaining vowels", placement: TooltipPlacement.Left).PT(8),
+                        HStack().Wrap().WS().Children(mostVowels.Select(w => RenderWord(w.Word).PR(12))))),
+                    If(mostCommon.Any(), Empty().Grow()),
+                    If(mostCommon.Any(), VStack().WS().Children(
+                        TextBlock("Most Common").SemiBold().Secondary().Tooltip("Guesses that have more common letters with the remainig available answers", placement: TooltipPlacement.Left).PT(8),
+                        HStack().Wrap().WS().Children(mostCommon.Select(w => RenderWord(w.Word).PR(12))))),
+                    Empty().Grow()
+                );
+            }
             IComponent RenderWord(string word)
             {
                 var div = Div(_("tiny-row"), word.Select((c,i) => Span(_("tiny-tile" + (greenChars[i] == c ? " state-correct" : ""), text:c.ToString()))).ToArray());
@@ -302,7 +335,7 @@ namespace WordleSolver
 
         private void HandleKey(string keyPressed)
         {
-            if (keyPressed.Length == 1 && _validKeys.Contains(char.ToLower(keyPressed[0])))
+            if (keyPressed.Length == 1 && Words.ValidLetters.Contains(char.ToLower(keyPressed[0])))
             {
                 if (_currentLetter < 5)
                 {
